@@ -1,0 +1,60 @@
+flowchart LR
+  %% Components by repository
+  subgraph webapp [portafolio-webapp-frontend-v1]
+    SWA["Azure Static Web App<br/>React/Vite"]
+  end
+
+  subgraph api [portafolio-functionapp-cv-api-v1]
+    API["Function App (Java 17)<br/>Filter + Validation + Idempotency"]
+  end
+
+  subgraph db [portafolio-db-cv-data-v1]
+    COSMOS["Cosmos DB (JSON Maestro + Idempotency Table)"]
+  end
+
+  subgraph worker_repo [portafolio-functionapp-cv-worker-v1]
+    WORKER["Function App (Node.js 20)<br/>PDF generation using portafolio-lib-harvard-cv-v1"]
+  end
+
+  subgraph lib [portafolio-lib-harvard-cv-v1]
+    LIB["Node.js library (PDFKit)<br/>Harvard CV renderer"]
+  end
+
+  subgraph notifier [portafolio-functionapp-notifier-v1]
+    NOTIF["Function App (Java 17)<br/>Email + Airtable integration"]
+  end
+
+
+  %% External services
+  CDN["CDN / Edge"]
+  WAF["WAF / App Gateway"]
+  QUEUE["Storage Queue: cv-requests"]
+  DLQ["Dead Letter Queue"]
+  BLOB["Blob Storage - container: pdfs"]
+  EMAIL["Email Provider (SendGrid / SMTP)"]
+  AIRTABLE["Airtable (CRM)"]
+  APPINSIGHTS["App Insights / Log Analytics"]
+
+  %% Flow
+  SWA -->|HTTPS - POST tags| WAF
+  WAF -->|HTTPS| API
+
+  API -->|Query - Filter| COSMOS
+  API -->|Check idempotency hash| COSMOS
+  API -->|Enqueue message - JSON| QUEUE
+  API -->|Return immediate response| SWA
+
+  QUEUE -->|Message| WORKER
+  WORKER -->|uses| LIB
+  WORKER -->|Upload PDF - private| BLOB
+  WORKER -->|Write metadata - status| COSMOS
+  WORKER -->|Emit metrics - traces| APPINSIGHTS
+  WORKER -->|On failure after retries| DLQ
+
+  BLOB -->|SAS 24h| NOTIF
+  NOTIF -->|Send email w/ link| EMAIL
+  NOTIF -->|Record lead| AIRTABLE
+  NOTIF -->|Emit logs| APPINSIGHTS
+
+  classDef repo fill:#eef,stroke:#333,stroke-width:1px
+  class webapp,api,db,worker_repo,lib,notifier repo

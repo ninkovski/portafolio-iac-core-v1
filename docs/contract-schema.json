@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Entrada de experiencia / formación",
+  "type": "object",
+  "properties": {
+    "entidad": { "type": "string" },
+    "titulo": { "type": "string" },
+    "organizacion": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "logros": { "type": "array", "items": { "type": "string" } },
+    "fecha": { "type": "string" }
+  },
+  "required": ["entidad","titulo","organizacion","tags"]
+}
