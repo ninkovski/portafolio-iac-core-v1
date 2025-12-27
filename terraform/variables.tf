@@ -1,13 +1,13 @@
 variable "location" {
   description = "Azure region where resources will be created"
   type        = string
-  default     = "East US"
+  default     = "Central US"
 }
 
 variable "prefix" {
   description = "Resource name prefix"
   type        = string
-  default     = "iac-core"
+  default     = "iac-core-cenus"
 }
 
 variable "tags" {
