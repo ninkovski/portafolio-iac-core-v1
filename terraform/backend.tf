@@ -1,9 +1,7 @@
 /*
- Local backend by default to allow immediate usage. Replace with an Azure remote
- state backend (azurerm) once a storage account and container are provisioned.
+ Remote state backend (azurerm). Values are provided at init time via
+ -backend-config or environment variables in CI.
 */
 terraform {
-  backend "local" {
-    path = "terraform.tfstate"
-  }
+  backend "azurerm" {}
 }

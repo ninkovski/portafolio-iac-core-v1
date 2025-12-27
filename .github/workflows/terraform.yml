@@ -1,0 +1,57 @@
+name: terraform
+
+on:
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Run terraform apply (true/false)"
+        required: true
+        default: "false"
+
+env:
+  WORKING_DIR: terraform
+  TF_ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+
+jobs:
+  plan_apply:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.0
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform init (remote backend)
+        run: |
+          terraform -chdir=${{ env.WORKING_DIR }} init -input=false -upgrade \
+            -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER }}" \
+            -backend-config="key=${{ secrets.TF_BACKEND_KEY }}"
+
+      - name: Terraform fmt
+        run: terraform -chdir=${{ env.WORKING_DIR }} fmt -check
+
+      - name: Terraform validate
+        run: terraform -chdir=${{ env.WORKING_DIR }} validate
+
+      - name: Terraform plan
+        run: terraform -chdir=${{ env.WORKING_DIR }} plan -input=false -out=tfplan
+
+      - name: Terraform apply (auto on develop, manual on main)
+        if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
+        run: terraform -chdir=${{ env.WORKING_DIR }} apply -input=false tfplan
