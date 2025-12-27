@@ -66,6 +66,7 @@ resource "azurerm_cosmosdb_account" "cv_data" {
   resource_group_name = azurerm_resource_group.core.name
   offer_type          = "Standard"
   kind                = "GlobalDocumentDB"
+  free_tier_enabled   = true
 
   consistency_policy {
     consistency_level = "Session"
