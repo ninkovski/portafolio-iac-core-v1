@@ -13,6 +13,12 @@ on:
 env:
   WORKING_DIR: terraform
   TF_ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+  TF_VAR_location: ${{ secrets.TF_VAR_LOCATION != '' && secrets.TF_VAR_LOCATION || 'Central US' }}
+  TF_VAR_prefix: ${{ secrets.TF_VAR_PREFIX != '' && secrets.TF_VAR_PREFIX || 'iac-core-cenus' }}
+  TF_BACKEND_RG: ${{ secrets.TF_BACKEND_RG != '' && secrets.TF_BACKEND_RG || 'iac-core-cenus-rg' }}
+  TF_BACKEND_STORAGE_ACCOUNT: ${{ secrets.TF_BACKEND_STORAGE_ACCOUNT != '' && secrets.TF_BACKEND_STORAGE_ACCOUNT || 'iaccorecenus' }}
+  TF_BACKEND_CONTAINER: ${{ secrets.TF_BACKEND_CONTAINER != '' && secrets.TF_BACKEND_CONTAINER || 'tfstate' }}
+  TF_BACKEND_KEY: ${{ secrets.TF_BACKEND_KEY != '' && secrets.TF_BACKEND_KEY || format('terraform-{0}.tfstate', github.ref == 'refs/heads/main' && 'prod' || 'dev') }}
 
 jobs:
   plan_apply:
@@ -38,10 +44,10 @@ jobs:
       - name: Terraform init (remote backend)
         run: |
           terraform -chdir=${{ env.WORKING_DIR }} init -input=false -upgrade \
-            -backend-config="resource_group_name=${{ secrets.TF_BACKEND_RG }}" \
-            -backend-config="storage_account_name=${{ secrets.TF_BACKEND_STORAGE_ACCOUNT }}" \
-            -backend-config="container_name=${{ secrets.TF_BACKEND_CONTAINER }}" \
-            -backend-config="key=${{ secrets.TF_BACKEND_KEY }}"
+            -backend-config="resource_group_name=${{ env.TF_BACKEND_RG }}" \
+            -backend-config="storage_account_name=${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ env.TF_BACKEND_CONTAINER }}" \
+            -backend-config="key=${{ env.TF_BACKEND_KEY }}"
 
       - name: Terraform fmt
         run: terraform -chdir=${{ env.WORKING_DIR }} fmt -check
