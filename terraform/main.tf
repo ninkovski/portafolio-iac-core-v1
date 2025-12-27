@@ -77,9 +77,6 @@ resource "azurerm_cosmosdb_account" "cv_data" {
     failover_priority = 0
   }
 
-  capabilities {
-    name = "EnableServerless"
-  }
 }
 
 output "storage_account_name" {
