@@ -16,15 +16,3 @@ variable "tags" {
   default     = {}
 }
 
-variable "github_token" {
-  description = "GitHub personal access token for Static Web App deployment (set via TF_VAR_github_token or secret)"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "github_repo_url" {
-  description = "GitHub repository URL for Static Web App (e.g., https://github.com/owner/repo)"
-  type        = string
-  default     = ""
-}
