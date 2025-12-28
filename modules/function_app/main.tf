@@ -21,7 +21,8 @@ resource "azurerm_linux_function_app" "this" {
 
   site_config {
     application_stack {
-      # Keep stack minimal; rely on FUNCTIONS_WORKER_RUNTIME
+      node_version   = var.runtime == "node" ? "18" : null
+      python_version = var.runtime == "python" ? "3.11" : null
     }
     ftps_state = "Disabled"
   }

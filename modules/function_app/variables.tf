@@ -23,6 +23,11 @@ variable "runtime" {
   description = "Runtime (node|java)"
   type        = string
   default     = "node"
+
+  validation {
+    condition     = contains(["node", "python"], var.runtime)
+    error_message = "runtime must be one of: node, python"
+  }
 }
 
 variable "storage_account_name" {
