@@ -15,10 +15,10 @@ env:
   TF_ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
   TF_VAR_location: ${{ secrets.TF_VAR_LOCATION != '' && secrets.TF_VAR_LOCATION || 'Central US' }}
   TF_VAR_prefix: ${{ secrets.TF_VAR_PREFIX != '' && secrets.TF_VAR_PREFIX || 'iac-core-cenus' }}
-  TF_BACKEND_RG: ${{ secrets.TF_BACKEND_RG != '' && secrets.TF_BACKEND_RG || 'iac-core-cenus-rg' }}
-  TF_BACKEND_STORAGE_ACCOUNT: ${{ secrets.TF_BACKEND_STORAGE_ACCOUNT != '' && secrets.TF_BACKEND_STORAGE_ACCOUNT || 'iaccorecenus' }}
+  TF_BACKEND_RG: ${{ secrets.TF_BACKEND_RG != '' && secrets.TF_BACKEND_RG || 'tfstate-rg' }}
+  TF_BACKEND_STORAGE_ACCOUNT: ${{ secrets.TF_BACKEND_STORAGE_ACCOUNT != '' && secrets.TF_BACKEND_STORAGE_ACCOUNT || 'iaccoretfstate' }}
   TF_BACKEND_CONTAINER: ${{ secrets.TF_BACKEND_CONTAINER != '' && secrets.TF_BACKEND_CONTAINER || 'tfstate' }}
-  TF_BACKEND_KEY: ${{ secrets.TF_BACKEND_KEY != '' && secrets.TF_BACKEND_KEY || format('terraform-{0}.tfstate', github.ref == 'refs/heads/main' && 'prod' || 'dev') }}
+  TF_BACKEND_KEY: ${{ secrets.TF_BACKEND_KEY != '' && secrets.TF_BACKEND_KEY || format('tfstate-{0}-{1}.tfstate', github.repository, (github.ref == 'refs/heads/main' && 'prod' || 'dev')) }}
   ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
   ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
   ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
