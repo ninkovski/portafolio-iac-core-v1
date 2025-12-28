@@ -117,26 +117,6 @@ output "function_app_notifier_hostname" {
   value = module.function_app_notifier.function_app_default_hostname
 }
 
-# Static Web App for frontend
-resource "azurerm_static_web_app" "frontend" {
-  count               = var.github_token != "" && var.github_repo_url != "" ? 1 : 0
-  name                = "portafolio-webapp-frontend"
-  resource_group_name = azurerm_resource_group.core.name
-  location            = var.location
-  sku_tier            = "Free"
-  sku_size            = "Free"
-  app_location        = "."
-  api_location        = "api"
-  output_location     = "dist"
-  github_token        = var.github_token
-  repository_url      = var.github_repo_url
-  branch              = "main"
-}
-
-output "static_web_app_default_hostname" {
-  value = try(azurerm_static_web_app.frontend[0].default_host_name, "Not deployed (requires github_token and github_repo_url)")
-}
-
 # Function Apps (module)
 module "function_app_cv_api" {
   source                     = "../modules/function_app"
