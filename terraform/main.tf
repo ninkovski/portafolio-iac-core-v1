@@ -117,9 +117,19 @@ output "function_app_notifier_hostname" {
   value = module.function_app_notifier.function_app_default_hostname
 }
 
+# Shared App Service Plan for all Functions (Free tier)
+resource "azurerm_service_plan" "functions" {
+  name                = "${var.prefix}-functions-plan"
+  resource_group_name = azurerm_resource_group.core.name
+  location            = var.location
+  os_type             = "Linux"
+  sku_name            = "F1" # Free tier
+}
+
 # Function Apps (module)
 module "function_app_cv_api" {
   source                     = "../modules/function_app"
+  service_plan_id            = azurerm_service_plan.functions.id
   name                       = "portafolio-cv-api"
   resource_group_name        = azurerm_resource_group.core.name
   location                   = var.location
@@ -131,6 +141,7 @@ module "function_app_cv_api" {
 
 module "function_app_cv_worker" {
   source                     = "../modules/function_app"
+  service_plan_id            = azurerm_service_plan.functions.id
   name                       = "portafolio-cv-worker"
   resource_group_name        = azurerm_resource_group.core.name
   location                   = var.location
@@ -142,6 +153,7 @@ module "function_app_cv_worker" {
 
 module "function_app_payments" {
   source                     = "../modules/function_app"
+  service_plan_id            = azurerm_service_plan.functions.id
   name                       = "portafolio-payments"
   resource_group_name        = azurerm_resource_group.core.name
   location                   = var.location
@@ -153,6 +165,7 @@ module "function_app_payments" {
 
 module "function_app_notifier" {
   source                     = "../modules/function_app"
+  service_plan_id            = azurerm_service_plan.functions.id
   name                       = "portafolio-notifier"
   resource_group_name        = azurerm_resource_group.core.name
   location                   = var.location

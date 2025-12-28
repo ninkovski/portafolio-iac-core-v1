@@ -11,6 +11,6 @@ variable "location" {
 }
 
 variable "enable_serverless" {
-  type = bool
+  type    = bool
   default = true
 }

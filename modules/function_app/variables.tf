@@ -1,3 +1,8 @@
+variable "service_plan_id" {
+  description = "App Service Plan ID (shared plan)"
+  type        = string
+}
+
 variable "name" {
   description = "Function app name"
   type        = string
