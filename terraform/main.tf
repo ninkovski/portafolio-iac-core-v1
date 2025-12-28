@@ -101,10 +101,79 @@ output "cosmosdb_account_endpoint" {
   value = azurerm_cosmosdb_account.cv_data.endpoint
 }
 
-# Function App (module)
-module "function_app" {
+output "function_app_cv_api_hostname" {
+  value = module.function_app_cv_api.function_app_default_hostname
+}
+
+output "function_app_cv_worker_hostname" {
+  value = module.function_app_cv_worker.function_app_default_hostname
+}
+
+output "function_app_payments_hostname" {
+  value = module.function_app_payments.function_app_default_hostname
+}
+
+output "function_app_notifier_hostname" {
+  value = module.function_app_notifier.function_app_default_hostname
+}
+
+# Static Web App for frontend
+resource "azurerm_static_web_app" "frontend" {
+  count               = var.github_token != "" && var.github_repo_url != "" ? 1 : 0
+  name                = "portafolio-webapp-frontend"
+  resource_group_name = azurerm_resource_group.core.name
+  location            = var.location
+  sku_tier            = "Free"
+  sku_size            = "Free"
+  app_location        = "."
+  api_location        = "api"
+  output_location     = "dist"
+  github_token        = var.github_token
+  repository_url      = var.github_repo_url
+  branch              = "main"
+}
+
+output "static_web_app_default_hostname" {
+  value = try(azurerm_static_web_app.frontend[0].default_host_name, "Not deployed (requires github_token and github_repo_url)")
+}
+
+# Function Apps (module)
+module "function_app_cv_api" {
   source                     = "../modules/function_app"
-  name                       = "${var.prefix}-func"
+  name                       = "portafolio-cv-api"
+  resource_group_name        = azurerm_resource_group.core.name
+  location                   = var.location
+  identity_id                = azurerm_user_assigned_identity.functions.id
+  runtime                    = "node"
+  storage_account_name       = module.storage.storage_account_name
+  storage_account_access_key = module.storage.storage_account_primary_access_key
+}
+
+module "function_app_cv_worker" {
+  source                     = "../modules/function_app"
+  name                       = "portafolio-cv-worker"
+  resource_group_name        = azurerm_resource_group.core.name
+  location                   = var.location
+  identity_id                = azurerm_user_assigned_identity.functions.id
+  runtime                    = "node"
+  storage_account_name       = module.storage.storage_account_name
+  storage_account_access_key = module.storage.storage_account_primary_access_key
+}
+
+module "function_app_payments" {
+  source                     = "../modules/function_app"
+  name                       = "portafolio-payments"
+  resource_group_name        = azurerm_resource_group.core.name
+  location                   = var.location
+  identity_id                = azurerm_user_assigned_identity.functions.id
+  runtime                    = "node"
+  storage_account_name       = module.storage.storage_account_name
+  storage_account_access_key = module.storage.storage_account_primary_access_key
+}
+
+module "function_app_notifier" {
+  source                     = "../modules/function_app"
+  name                       = "portafolio-notifier"
   resource_group_name        = azurerm_resource_group.core.name
   location                   = var.location
   identity_id                = azurerm_user_assigned_identity.functions.id
