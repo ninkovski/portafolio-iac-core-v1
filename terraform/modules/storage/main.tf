@@ -4,7 +4,7 @@ resource "azurerm_storage_account" "this" {
   location                 = var.location
   account_tier             = var.account_tier
   account_replication_type = var.account_replication_type
-  min_tls_version = "TLS1_2"
+  min_tls_version          = "TLS1_2"
 }
 
 output "storage_account_id" {

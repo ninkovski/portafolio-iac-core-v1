@@ -123,54 +123,54 @@ resource "azurerm_service_plan" "functions" {
   resource_group_name = azurerm_resource_group.core.name
   location            = var.location
   os_type             = "Linux"
-  sku_name            = "F1"  # Free tier
+  sku_name            = "F1" # Free tier
 }
 
 # Function Apps (module)
 module "function_app_cv_api" {
-  source              = "../modules/function_app"
-  service_plan_id     = azurerm_service_plan.functions.id
-  name                = "portafolio-cv-api"
-  resource_group_name = azurerm_resource_group.core.name
-  location            = var.location
-  identity_id         = azurerm_user_assigned_identity.functions.id
-  runtime             = "node"
+  source                     = "../modules/function_app"
+  service_plan_id            = azurerm_service_plan.functions.id
+  name                       = "portafolio-cv-api"
+  resource_group_name        = azurerm_resource_group.core.name
+  location                   = var.location
+  identity_id                = azurerm_user_assigned_identity.functions.id
+  runtime                    = "node"
   storage_account_name       = module.storage.storage_account_name
   storage_account_access_key = module.storage.storage_account_primary_access_key
 }
 
 module "function_app_cv_worker" {
-  source              = "../modules/function_app"
-  service_plan_id     = azurerm_service_plan.functions.id
-  name                = "portafolio-cv-worker"
-  resource_group_name = azurerm_resource_group.core.name
-  location            = var.location
-  identity_id         = azurerm_user_assigned_identity.functions.id
-  runtime             = "node"
+  source                     = "../modules/function_app"
+  service_plan_id            = azurerm_service_plan.functions.id
+  name                       = "portafolio-cv-worker"
+  resource_group_name        = azurerm_resource_group.core.name
+  location                   = var.location
+  identity_id                = azurerm_user_assigned_identity.functions.id
+  runtime                    = "node"
   storage_account_name       = module.storage.storage_account_name
   storage_account_access_key = module.storage.storage_account_primary_access_key
 }
 
 module "function_app_payments" {
-  source              = "../modules/function_app"
-  service_plan_id     = azurerm_service_plan.functions.id
-  name                = "portafolio-payments"
-  resource_group_name = azurerm_resource_group.core.name
-  location            = var.location
-  identity_id         = azurerm_user_assigned_identity.functions.id
-  runtime             = "node"
+  source                     = "../modules/function_app"
+  service_plan_id            = azurerm_service_plan.functions.id
+  name                       = "portafolio-payments"
+  resource_group_name        = azurerm_resource_group.core.name
+  location                   = var.location
+  identity_id                = azurerm_user_assigned_identity.functions.id
+  runtime                    = "node"
   storage_account_name       = module.storage.storage_account_name
   storage_account_access_key = module.storage.storage_account_primary_access_key
 }
 
 module "function_app_notifier" {
-  source              = "../modules/function_app"
-  service_plan_id     = azurerm_service_plan.functions.id
-  name                = "portafolio-notifier"
-  resource_group_name = azurerm_resource_group.core.name
-  location            = var.location
-  identity_id         = azurerm_user_assigned_identity.functions.id
-  runtime             = "node"
+  source                     = "../modules/function_app"
+  service_plan_id            = azurerm_service_plan.functions.id
+  name                       = "portafolio-notifier"
+  resource_group_name        = azurerm_resource_group.core.name
+  location                   = var.location
+  identity_id                = azurerm_user_assigned_identity.functions.id
+  runtime                    = "node"
   storage_account_name       = module.storage.storage_account_name
   storage_account_access_key = module.storage.storage_account_primary_access_key
 }
