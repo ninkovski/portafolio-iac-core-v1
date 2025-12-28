@@ -100,3 +100,15 @@ output "functions_identity_id" {
 output "cosmosdb_account_endpoint" {
   value = azurerm_cosmosdb_account.cv_data.endpoint
 }
+
+# Function App (module)
+module "function_app" {
+  source                     = "../modules/function_app"
+  name                       = "${var.prefix}-func"
+  resource_group_name        = azurerm_resource_group.core.name
+  location                   = var.location
+  identity_id                = azurerm_user_assigned_identity.functions.id
+  runtime                    = "node"
+  storage_account_name       = module.storage.storage_account_name
+  storage_account_access_key = module.storage.storage_account_primary_access_key
+}

@@ -2,13 +2,13 @@ name: terraform
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, feature/* ]
   workflow_dispatch:
     inputs:
       apply:
         description: "Run terraform apply (true/false)"
         required: true
-        default: "false"
+        default: "true"
 
 env:
   WORKING_DIR: terraform
@@ -44,6 +44,20 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Ensure backend RG and storage exist
+        run: |
+          az group create --name "${{ env.TF_BACKEND_RG }}" --location "${{ env.TF_VAR_location }}"
+          az storage account show --name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" --resource-group "${{ env.TF_BACKEND_RG }}" >/dev/null 2>&1 \
+            || az storage account create --name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" --resource-group "${{ env.TF_BACKEND_RG }}" --location "${{ env.TF_VAR_location }}" --sku Standard_LRS --kind StorageV2 --https-only true
+
+      - name: Ensure backend container exists
+        run: |
+          az storage container create \
+            --name "${{ env.TF_BACKEND_CONTAINER }}" \
+            --account-name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
+            --auth-mode login \
+            --public-access off
 
       - name: Terraform init (remote backend)
         run: |
