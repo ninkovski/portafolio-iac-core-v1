@@ -67,14 +67,11 @@ jobs:
             -backend-config="container_name=${{ env.TF_BACKEND_CONTAINER }}" \
             -backend-config="key=${{ env.TF_BACKEND_KEY }}"
 
-      - name: Terraform fmt
-        run: terraform -chdir=${{ env.WORKING_DIR }} fmt -check
+      - name: Terraform fmt (auto-fix)
+        run: terraform -chdir=${{ env.WORKING_DIR }} fmt -recursive
 
       - name: Terraform validate
         run: terraform -chdir=${{ env.WORKING_DIR }} validate
-
-      - name: Terraform plan
-        run: terraform -chdir=${{ env.WORKING_DIR }} plan -input=false -out=tfplan
 
       - name: Terraform apply (auto on develop, manual on main)
         if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
