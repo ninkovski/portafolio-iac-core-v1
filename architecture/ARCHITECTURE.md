@@ -1,43 +1,62 @@
 # Arquitectura Técnica — Dynamic Harvard CV Engine
 
 ## Resumen
-Arquitectura event-driven en Azure orientada a coste mínimo y alta escalabilidad. Flujo principal: el frontend envía una petición con las tags seleccionadas → función orquestadora filtra el JSON maestro → inserta un mensaje en `cv-requests` (Storage Queue) → worker genera PDF y sube a Blob Storage → notificador envía el email con el link y registra el lead en Airtable.
+Arquitectura serverless event-driven mínima en Azure. La infraestructura creada por Terraform incluye:
+- Resource Group y App Service Plan Linux (SKU F1) compartido para Functions.
+- Cuenta de Storage con contenedor `pdfs`, cola `cv-requests` y política de lifecycle para purgar PDF en 1 día.
+- Identidad Administrada asignable a las Functions.
+- Cosmos DB en modo Serverless para datos maestros y metadatos.
+- Function Apps: `portafolio-cv-api`, `portafolio-cv-worker`, `portafolio-payments`, `portafolio-notifier` (runtime Node configurable).
 
-## Diagrama (Mermaid)
+## Flujo principal (Mermaid)
 ```mermaid
-flowchart LR
-  subgraph Frontend
-    A[Azure SWA - Selector de tags] --> B[API Orquestadora (Function Java)]
+flowchart TB
+  subgraph Client
+    UI[Cliente / Frontend]
   end
 
-  B --> C[Storage Queue: cv-requests]
-  C --> D[Worker (Function Node.js) : Genera PDF con portafolio-lib-harvard-cv-v1]
-  D --> E[Azure Blob Storage (container: pdfs)]
-  D --> F[Cosmos DB (JSON Maestro)]
-  E --> G[Notifier (Function Java) -> Envia email y escribe Airtable]
-  B --> F
+  subgraph Functions
+    API[Function App: portafolio-cv-api]\nValida entrada y encola
+    WORKER[Function App: portafolio-cv-worker]\nGenera PDF
+    NOTIF[Function App: portafolio-notifier]\nNotifica y registra
+    PAY[Function App: portafolio-payments]\nPagos (futuro)
+  end
 
-  style A fill:#f9f,stroke:#333,stroke-width:1px
-  style B fill:#bbf,stroke:#333,stroke-width:1px
-  style D fill:#bfb,stroke:#333,stroke-width:1px
-  style E fill:#ffd,stroke:#333,stroke-width:1px
-  style G fill:#fdd,stroke:#333,stroke-width:1px
+  subgraph Data
+    COSMOS[Cosmos DB (Serverless)]
+    QUEUE[Storage Queue cv-requests]
+    BLOB[Blob Storage container pdfs]
+  end
+
+  UI --> API
+  API -->|Lee maestro / hash| COSMOS
+  API -->|Encola solicitud| QUEUE
+  QUEUE --> WORKER
+  WORKER -->|PDF privado| BLOB
+  WORKER -->|Estado / hash| COSMOS
+  WORKER -->|Trigger/HTTP| NOTIF
+  NOTIF -->|Email / CRM| UI
+  NOTIF --> COSMOS
+  API -.-> PAY
+
+  classDef fn fill:#eef,stroke:#333,stroke-width:1px
+  classDef data fill:#ffd,stroke:#333,stroke-width:1px
+  class API,WORKER,NOTIF,PAY fn
+  class COSMOS,QUEUE,BLOB data
 ```
 
-## Notas importantes
-- Idempotencia: el API debe generar un hash por set de tags y almacenarlo (Cosmos) para evitar reprocesos.
-- Seguridad: usar Managed Identities para las fonctions y usar SAS o URLs temporales para los blobs (expiración 24h).
-- Storage Governance: política de lifecycle del Blob para purgado a 24 horas.
+## Notas de diseño
+- Idempotencia: almacenar hash en Cosmos para evitar reprocesos y servir respuestas rápidas.
+- Seguridad: Managed Identity para Functions; blobs privados con SAS de corta vida; cola y storage sólo accesibles por la identidad.
+- Coste: Cosmos en Serverless y plan F1 para Functions en desarrollo; considerar consumo o EP1 al pasar a prod.
 
-## Repositorios (orden implementación)
-1. `portafolio-iac-core-v1` — Infra global (Terraform)
-2. `portafolio-db-cv-data-v1` — JSON maestro / esquema en Cosmos
-3. `portafolio-lib-harvard-cv-v1` — Librería Node.js que genera PDFs
-4. `portafolio-functionapp-cv-api-v1` — Function Java (orquestadora)
-5. `portafolio-functionapp-cv-worker-v1` — Function Node.js (worker)
-6. `portafolio-functionapp-notifier-v1` — Function Java (notificador)
-7. `portafolio-webapp-frontend-v1` — Frontend (Azure SWA)
+## Repositorios relacionados
+- `portafolio-iac-core-v1` — Infraestructura (este repo).
+- `portafolio-db-cv-data-v1` — Datos maestros en Cosmos.
+- `portafolio-functionapp-cv-api-v1` — API (orquestación + cola).
+- `portafolio-functionapp-cv-worker-v1` — Worker de generación de PDF.
+- `portafolio-functionapp-notifier-v1` — Notificador (email/CRM).
+- `portafolio-functionapp-payments-v1` — Pagos (futuro).
+- `portafolio-webapp-frontend-v1` — Frontend.
 
----
-
-Si quieres, genero SVG/PNG del diagrama y lo añado al repo; dime si prefieres mermaid embebido o archivo visual. 
+Si prefieres exportar los diagramas a SVG/PNG, avísame y los genero. 

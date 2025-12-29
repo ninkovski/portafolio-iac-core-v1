@@ -1,71 +1,50 @@
 flowchart TB
-  %% Frontline
-  subgraph Internet
-    U[Recruiter UI / Browser]
+  %% Clients
+  subgraph Client
+    U[Frontend / Cliente]
   end
 
-  subgraph Edge[Edge / Ingress]
-    CDN[CDN]
-    WAF[WAF / App Gateway]
-    CDN --> WAF
-    WAF --> SWA[Azure SWA]
+  %% Functions layer
+  subgraph Functions
+    API[portafolio-cv-api\nFunction App]
+    WORKER[portafolio-cv-worker\nFunction App]
+    NOTIF[portafolio-notifier\nFunction App]
+    PAY[portafolio-payments\nFunction App]
   end
 
-  U --> CDN
-  SWA --> API["API Orquestadora (Function Java)<br/>Validations: input schema, auth, rate-limit<br/>Managed Identity (no secrets)<br/>Key Vault for secrets"]
-  API -->|filter tags| Filter[Tag Filter + Authz]
-  API -->|check cache/hash| Idempotency["Idempotency Cache (Cosmos DB)"]
-  Idempotency -->|hit| Return["Return cached result / SAS URL"]
-  Return --> API
-
-  Idempotency -->|miss| Q["Storage Queue: cv-requests"]
-  Filter --> Q
-
-  Q --> Worker["Worker (Function Node.js)<br/>Uses portafolio-lib-harvard-cv-v1<br/>Retries with exponential backoff"]
-  Q --- DLQ[Dead-letter Queue]
-
-  Worker --> Blob["Azure Blob Storage (container: pdfs)<br/>Private<br/>SAS 24h<br/>Lifecycle purge 24h"]
-  Worker --> Cosmos["Cosmos DB (JSON Maestro &plus; Metadata)"]
-  Worker --> Metrics[Metric events / App Insights]
-
-  Blob --> Notifier["Notifier (Function Java)<br/>Creates email with SAS<br/>Persists lead to Airtable via secure API"]
-  Notifier --> Email["Email Provider<br/>SendGrid or SMTP"]
-  Notifier --> Airtable
-
-  %% Observability / Optimization
-  Metrics --> LogAnalytics[Log Analytics / App Insights]
-  LogAnalytics --> Alerts[Alerts / Action Groups]
-  Alerts --> DevOps[Pager / Teams / Email]
-  LogAnalytics --> CostInsights[Cost & RU telemetry]
-  CostInsights --> OptLoop[Optimization Loop]
-  OptLoop -->|adjust| Cosmos
-  OptLoop -->|tune| Worker
-
-  %% CI/CD and Security gate
-  subgraph CI/CD
-    Repo[GitHub - IaC repo]
-    PR[PR: tflint / tfsec / terraform plan]
-    MAIN[Protected apply - env approvals]
+  %% Data
+  subgraph Storage
+    QUEUE[Storage Queue cv-requests]
+    BLOB[Blob container pdfs]
   end
-  Repo --> PR --> MAIN
-  PR -->|publish plan| API
 
-  %% Security & Governance
-  subgraph Governance
-    AzurePolicy[Azure Policy]
-    RBAC[RBAC & Managed Identities]
-    KeyVault[Key Vault]
-  end
-  KeyVault --> API
-  RBAC --> Worker
-  AzurePolicy --> Blob
-  AzurePolicy --> Cosmos
+  COSMOS[Cosmos DB\nServerless]
 
-  style API fill:#bbf,stroke:#333,stroke-width:1px
-  style Worker fill:#bfb,stroke:#333,stroke-width:1px
-  style Blob fill:#ffd,stroke:#333,stroke-width:1px
-  style Notifier fill:#fdd,stroke:#333,stroke-width:1px
-  style CDN fill:#eef,stroke:#333,stroke-width:1px
-  style DLQ fill:#fcc,stroke:#333,stroke-width:1px
-  classDef infra fill:#f8f8f8,stroke:#aaa
-  class Blob,Cosmos,DLQ infra
+  %% Flow
+  U --> API
+  API -->|read/hash| COSMOS
+  API -->|enqueue| QUEUE
+  QUEUE --> WORKER
+  WORKER -->|pdf privado| BLOB
+  WORKER -->|status/meta| COSMOS
+  WORKER -->|invoke| NOTIF
+  NOTIF -->|email/CRM| U
+  NOTIF --> COSMOS
+  API -.-> PAY
+
+  %% Infra shared
+  PLAN[App Service Plan F1]
+  ID[User Assigned Managed Identity]
+  API --- PLAN
+  WORKER --- PLAN
+  NOTIF --- PLAN
+  PAY --- PLAN
+  API --- ID
+  WORKER --- ID
+  NOTIF --- ID
+  PAY --- ID
+
+  classDef fn fill:#eef,stroke:#333,stroke-width:1px
+  classDef data fill:#ffd,stroke:#333,stroke-width:1px
+  class API,WORKER,NOTIF,PAY fn
+  class QUEUE,BLOB,COSMOS data

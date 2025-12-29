@@ -1,69 +1,51 @@
 # portafolio-iac-core-v1
 
-**Master IAC / Infra para el proyecto Dynamic Harvard CV Engine** ✅
+Infraestructura base en Azure para el portafolio CV: recursos serverless mínimos, Terraform modular y flujos event-driven.
 
-Portafolio de infraestructura, documentación y estándares para desplegar un ecosistema serverless en Azure que genera CVs personalizados en tiempo real.
+## Alcance actual
+- Grupo de recursos y plan de App Service (SKU F1) compartido para Functions.
+- Cuenta de Storage con contenedor privado `pdfs`, cola `cv-requests` y política de lifecycle (purgado 1 día).
+- Identidad administrada (User Assigned) para las Functions.
+- Cosmos DB en modo Serverless (consistencia Session).
+- Function Apps (Linux): `portafolio-cv-api`, `portafolio-cv-worker`, `portafolio-payments`, `portafolio-notifier` (runtime Node configurable por módulo).
+- Módulos listos para extender: Storage, Function App; scaffolds: Cosmos DB, Queue, Web App.
 
-## 📌 Propósito
-Construir una arquitectura orientada a eventos y de bajo costo (Free Tier / Consumption) que permita a reclutadores generar CVs en formato Harvard (ATS-friendly) y enviarlos por correo.
-
-## 🧭 Resumen técnico
-- Frontend: Azure Static Web Apps (SWA)
-- API Orquestadora: Azure Function (Java 17)
-- Worker: Azure Function (Node.js 20)
-- Storage: Azure Blob Storage + Storage Queues
-- DB: Azure Cosmos DB (Serverless)
-- Notifier: Azure Function (Java 17) + Airtable
-- IaC: Terraform (modular)
-
-## 🚀 Quickstart (sin instalar nada localmente)
-Usa **Azure Cloud Shell** para validar la infra y planear:
-
+## Quickstart (Cloud Shell o local)
 ```bash
-# clona el repo y ve al folder terraform
 git clone <repo-url>
 cd portafolio-iac-core-v1/terraform
 
-terraform init
-terraform plan -var "prefix=iaccore" -var "location=East US" -out=tfplan
-terraform show -json tfplan > plan.json
+# Backend remoto (recomendado): pasa los backend-config o usa los env vars que usa el workflow
+terraform init -upgrade \
+  -backend-config="resource_group_name=tfstate-rg" \
+  -backend-config="storage_account_name=iaccoretfstate" \
+  -backend-config="container_name=tfstate" \
+  -backend-config="key=tfstate-<repo>-dev.tfstate"
+
+# Variables principales
+terraform plan -var "prefix=iaccore" -var "location=Central US" -out=tfplan
+terraform apply tfplan
 ```
 
-> Nota: si trabajas local, instala `terraform` y `az` o usa credenciales de Service Principal en variables de entorno.
+Credenciales: usa `az login` (interactivo/MI) o exporta `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, `ARM_TENANT_ID`, `ARM_SUBSCRIPTION_ID` (como hace el workflow).
 
-## 🔁 CI/CD (Infra)
-Hemos incluido plantillas de GitHub Actions para infraestructura:
+## CI/CD de infra (GitHub Actions)
+- `.github/workflows/terraform.yml`: ejecuta fmt/validate/apply en `develop` automáticamente; en `main` sólo aplica si se lanza por `workflow_dispatch` con `apply=true`. Provisiona el backend de state (RG, storage, container) si no existe.
+- `.github/workflows/terraform-fmt.yml`: auto `terraform fmt` en pushes.
 
-- **PR**: `.github/workflows/terraform-pr.yml` — ejecuta `terraform fmt`, `validate` y `plan` y publica el plan como comentario en el PR.
-- **Apply (main)**: `.github/workflows/terraform-apply.yml` — ejecuta `plan` y `apply` en `main` o por `workflow_dispatch`. El job de `apply` está ligado al `environment: production` para habilitar aprobaciones manuales y revisores.
+Secrets requeridos en el repo/orga:
+- `AZURE_CREDENTIALS`: JSON de `az ad sp create-for-rbac --sdk-auth` (para login OIDC en el workflow principal se usa `azure/login`).
+- (Opcional) `TF_VAR_LOCATION`, `TF_VAR_PREFIX`, `TF_BACKEND_*` si quieres sobreescribir los defaults del workflow.
 
-### Secrets necesarios en GitHub
-- `AZURE_CREDENTIALS`: JSON con las credenciales del Service Principal (salida de `az ad sp create-for-rbac --sdk-auth`).
-- (Opcional) `TF_STATE_STORAGE_ACCOUNT`, `TF_STATE_CONTAINER`, `TF_STATE_ACCESS_KEY` — si configuras backend remoto para el state.
+## Estructura
+- `terraform/` stack principal (RG, Storage, Queue, Cosmos, Functions) y bootstrap de backend en `terraform/bootstrap/`.
+- `modules/` scaffolds y módulos reutilizables para servicios clave.
+- `diagrams/` mermaid con arquitectura y componentes actualizados.
+- `standards/`, `CONTRIBUTING.md`, `docs/contract-schema.json` para gobierno y ejemplos.
 
-> Recomendación: crea un Service Principal con permisos mínimos (contributor) en la suscripción de infra y usa ese `AZURE_CREDENTIALS` para la integración de CI.
-
-## 📁 Documentación incluida
-- `ARCHITECTURE.md` — Diagrama mermaid y descripción del flujo event-driven. 🔍
-- `standards/STANDARDS.md` — Estándares de nombrado, Terraform y seguridad. 🔐
-- `CONTRIBUTING.md` — Guía para colaboradores y convenciones de commits. 🤝
-- `docs/contract-schema.json` — Contrato JSON maestro (ejemplo y esquema de entrada). 📄
-
----
-
-### 🧾 Contrato JSON (ejemplo)
-```json
-{
-  "entidad": "experiencia",
-  "titulo": "Arquitecto Cloud",
-  "organizacion": "Empresa X",
-  "tags": ["Azure", "Terraform", "Java", "Serverless"],
-  "logros": ["Reducción de costos en un 40%", "Implementación de CI/CD"],
-  "fecha": "2023 - Presente"
-}
-```
-
----
-
-Si quieres que genere además un diagrama más detallado (por repositorio), dímelo y lo añado al `ARCHITECTURE.md`. ✨
+## Notas rápidas
+- El storage usa lifecycle para purgar `pdfs/` en 1 día; no requiere SAS público.
+- Cosmos DB usa capacidad Serverless y consistencia Session para minimizar costos.
+- Las Function Apps heredan la identidad administrada `...-id`; conecta permisos según cada repo/app.
+- Renombra `prefix` por entorno para aislar recursos (`iac-core-dev`, `iac-core-prod`, etc.).
 

@@ -1,0 +1,25 @@
+flowchart LR
+  UI[Cliente / Frontend]
+  API["portafolio-cv-api (Function App)"]
+  HASH[Hash + cache en Cosmos]
+  QUEUE[Storage Queue cv-requests]
+  WORKER["portafolio-cv-worker (Function App)"]
+  PDF[Blob Storage container pdfs]
+  META[Cosmos DB metadata]
+  NOTIF["portafolio-notifier (Function App)"]
+  EMAIL[Proveedor email / CRM]
+
+  UI -->|POST solicitud| API
+  API -->|verifica cache| HASH
+  HASH -->|hit -> responde| UI
+  HASH -->|miss| QUEUE
+  API -->|enqueue JSON| QUEUE
+
+  QUEUE -->|trigger| WORKER
+  WORKER -->|genera PDF privado| PDF
+  WORKER -->|estado/ids| META
+  WORKER -->|notifica| NOTIF
+
+  NOTIF -->|arma correo con SAS| EMAIL
+  NOTIF -->|actualiza estado| META
+  EMAIL --> UI
