@@ -16,16 +16,16 @@ flowchart TB
   end
 
   subgraph Functions
-    API[Function App: portafolio-cv-api]\nValida entrada y encola
-    WORKER[Function App: portafolio-cv-worker]\nGenera PDF
-    NOTIF[Function App: portafolio-notifier]\nNotifica y registra
-    PAY[Function App: portafolio-payments]\nPagos (futuro)
+    API["Function App: portafolio-cv-api<br/>Valida entrada y encola"]
+    WORKER["Function App: portafolio-cv-worker<br/>Genera PDF"]
+    NOTIF["Function App: portafolio-notifier<br/>Notifica y registra"]
+    PAY["Function App: portafolio-payments<br/>Pagos futuro"]
   end
 
   subgraph Data
-    COSMOS[Cosmos DB (Serverless)]
-    QUEUE[Storage Queue cv-requests]
-    BLOB[Blob Storage container pdfs]
+    COSMOS["Cosmos DB Serverless"]
+    QUEUE["Storage Queue cv-requests"]
+    BLOB["Blob Storage container pdfs"]
   end
 
   UI --> API
