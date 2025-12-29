@@ -73,6 +73,9 @@ jobs:
       - name: Terraform validate
         run: terraform -chdir=${{ env.WORKING_DIR }} validate
 
+      - name: Terraform plan
+        run: terraform -chdir=${{ env.WORKING_DIR }} plan -input=false -out=tfplan
+
       - name: Terraform apply (auto on develop, manual on main)
         if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
         run: terraform -chdir=${{ env.WORKING_DIR }} apply -input=false tfplan
