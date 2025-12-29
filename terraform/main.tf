@@ -117,13 +117,13 @@ output "function_app_notifier_hostname" {
   value = module.function_app_notifier.function_app_default_hostname
 }
 
-# Shared App Service Plan for all Functions (Free tier)
+# Shared App Service Plan for all Functions (Consumption tier)
 resource "azurerm_service_plan" "functions" {
   name                = "${var.prefix}-functions-plan"
   resource_group_name = azurerm_resource_group.core.name
   location            = var.location
   os_type             = "Linux"
-  sku_name            = "F1" # Free tier
+  sku_name            = "Y1"  # Consumption (pay-per-use)
 }
 
 # Function Apps (module)
