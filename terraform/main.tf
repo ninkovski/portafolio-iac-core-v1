@@ -123,7 +123,7 @@ resource "azurerm_service_plan" "functions" {
   resource_group_name = azurerm_resource_group.core.name
   location            = var.location
   os_type             = "Linux"
-  sku_name            = "Y1"  # Consumption (pay-per-use)
+  sku_name            = "Y1" # Consumption (pay-per-use)
 }
 
 # Function Apps (module)
